@@ -1,0 +1,45 @@
+units real
+atom_style full
+
+#创建名为box的盒子
+region box block 0 100 0 100 -15 115 units box
+
+#box内原子数量、键、角等信息
+create_box 5 box bond/types 1 angle/types 1 extra/bond/per/atom 2 &
+            extra/special/per/atom 2 extra/angle/per/atom 1
+
+#H2O的晶格，可调节晶格尺寸控制水分子数量或水的密度
+
+region 				system block 1 99 1 99 1 99 units box
+region          CO2 sphere 50 50 50 23 units box side out
+region          CO2_1 sphere 50 50 50 20 units box side in
+region          H2O intersect 2 system CO2 #N reg-ID1 reg-ID2 
+
+#设定分子模板id为water，对应文件water.data
+molecule        water water.data
+lattice         bcc 4.2
+create_atoms 0 region H2O mol water 3453 units box
+
+#lattice         bcc 4.5
+create_atoms 3 random 733 12345 CO2_1 overlap 0.5
+
+lattice   custom 1.421 a1 3 0 0 a2 0 1.732 0 a3 0 0 2 &
+        basis 0 0 0 &
+        basis 0.33 0 0 &
+        basis 0.5 0.5 0 &
+        basis 0.833 0.5 0
+region    box1 block $(xlo) $(xhi) $(ylo) $(yhi) 110 112 units box
+region    box2 block $(xlo) $(xhi) $(ylo) $(yhi) -12 -10 units box
+
+create_atoms  4 region box1
+create_atoms  5 region box2
+
+
+#设置原子摩尔质量
+mass 1 16 #O
+mass 2 1  #H
+mass 3 16 #CH4
+mass 4 12 #C
+mass 5 12 #C
+#保存模型文件
+write_data          CH4-bubble-733.data

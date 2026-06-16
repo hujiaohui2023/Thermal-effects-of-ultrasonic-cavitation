@@ -1,0 +1,38 @@
+read_restart water.restart.56000000
+
+fix CO21 CO2 rigid/nve/small molecule
+
+fix platefix5 C2 setforce 0.0 0.0 0.0
+velocity C2 set 0 0 0
+
+fix platefix1 C1  setforce 0.0 0.0 NULL
+fix platefix2 C1  aveforce 0.0 0.0 0.0
+fix platefix3 C1  addforce 0.0 0.0 -3.7920e-5
+fix nve_top C1 nve
+
+fix fShakeSPCE gSPCE shake 0.0001 10 0 b 1 a 1
+#fix 1 gSPCE nvt temp 300 300  $(100.0*dt) 
+fix 1 gSPCE nve
+
+compute waterTemp gSPCE temp
+compute co2Temp CO2 temp
+compute c1Temp C1 temp
+compute c2Temp C2 temp
+compute 1 all ke/atom
+
+fix finally C1 move wiggle 0.0 0.0 10 1000000 units box
+
+
+dump       1 all custom 10000 shock id mol type q x y z vx vy vz fx fy fz c_1
+
+
+# 设置热力学输出
+thermo 1000
+thermo_style custom step temp c_waterTemp c_co2Temp c_c1Temp c_c2Temp ke 
+thermo_modify lost ignore
+
+# 设置时间步长
+timestep 1
+restart	    	1000000 water.restart  # 每两万步出一个模型
+kspace_style pppm 0.0001
+run 5000000

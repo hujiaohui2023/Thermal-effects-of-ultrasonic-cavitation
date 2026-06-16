@@ -1,0 +1,60 @@
+units           real       #1 fs=10*-15s   kcal/mol
+boundary p p p
+neighbor	        3 bin 
+neigh_modify        every 1 delay 0 check yes 
+atom_style   full   # energy = kcal/mol
+bond_style   harmonic
+angle_style  harmonic
+kspace_style pppm 0.0001
+pair_style   lj/cut/coul/long 10.0 8.0 
+read_data CH4-bubble-733.data
+
+   pair_coeff 1 1  0.1554   3.1660 # o*
+   pair_coeff 1 4  1.5165   3.3915 # o*c（0.015165）
+   pair_coeff 1 5  1.5165   3.3915 # o*c（0.015165）
+   
+   pair_coeff 2 2  0.0000   0.0000 # h*
+
+   pair_coeff 3 3  0.294    3.73 # CH4（联合原子模型）
+
+   pair_coeff 4 4  0.00148   3.61705 #c  
+   
+   pair_coeff 5 5  0.00148   3.61705 #c
+
+  group gSPCE type   1  2
+  group CH4 type     3
+  group C1 type       4
+  group C2 type       5
+  group bulk type     1  2  3
+
+
+ 
+ neigh_modify exclude type 4 4
+ neigh_modify exclude type 5 5
+ 
+ bond_coeff   1         6.0   1.0
+ angle_coeff   1         7.50    109.47
+
+
+# ----------------- Settings Section -----------------
+#1 eV = 23.0605 kcal/mol = 96.4853 kJ/mol = 11605 K 1是O 2是H 3是C 4是O'
+# ----------------- Run Section -----------------
+
+timestep       1
+thermo	       1000  #每隔一千步在屏幕上输出默认信息
+thermo_style    custom  time atoms temp  density press    #步数 时间 
+
+dump        1 all custom 10000 CH4-balance id mol type q x y z fx fy fz vx vy vz
+
+fix platefix5 C2 setforce 0.0 0.0 0.0
+velocity C2 set 0 0 0
+fix platefix1 C1  setforce 0.0 0.0 NULL
+fix platefix2 C1  aveforce 0.0 0.0 0.0
+fix platefix3 C1  addforce 0.0 0.0 -3.7920e-5
+fix nve_top C1 nve
+
+fix fShakeSPCE gSPCE shake 0.0001 10 0 b 1 a 1
+fix 1 gSPCE nvt temp 300 300  $(100.0*dt) 
+fix 2 CH4 nvt temp 300 300  $(100.0*dt)
+restart	    	2000000 water-733.restart  # 每两万步出一个模型 
+run 8000000						#16个小时跑2050000步

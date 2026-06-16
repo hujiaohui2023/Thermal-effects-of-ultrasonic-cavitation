@@ -1,0 +1,38 @@
+read_restart water-733.restart.12000000
+change_box all z final -20 95
+
+fix platefix5 C2 setforce 0.0 0.0 0.0
+velocity C2 set 0 0 0
+
+fix platefix1 C1  setforce 0.0 0.0 NULL
+fix platefix2 C1  aveforce 0.0 0.0 0.0
+fix platefix3 C1  addforce 0.0 0.0 -3.7920e-5
+fix nve_top C1 nve
+
+fix fShakeSPCE gSPCE shake 0.0001 10 0 b 1 a 1
+fix 1 gSPCE nve
+
+fix 2 CH4 nve
+
+fix finally C1 move wiggle 0.0 0.0 10 1000000 units box
+
+compute         KE   all ke/atom 
+#variable        KB   equal 1.987e-3   # 玻尔兹曼常数 (real 单位)
+#variable        TEMP atom c_KE/1.5/${KB} 
+
+dump       1 all custom 10000 shock id mol type q x y z vx vy vz fx fy fz c_KE
+
+
+compute waterTemp gSPCE temp
+compute CH4Temp CH4 temp
+compute c1Temp C1 temp
+compute c2Temp C2 temp
+
+thermo 1000
+thermo_style custom atoms time density press temp  c_waterTemp c_CH4Temp c_c1Temp c_c2Temp
+
+# 设置时间步长
+timestep 1
+restart	    	1000000 water.restart  # 每两万步出一个模型
+kspace_style pppm 0.0001
+run 5000000
